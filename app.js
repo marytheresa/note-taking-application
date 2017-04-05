@@ -7,7 +7,6 @@ var readline       = require('readline'),
     program        = require('commander'),
     findInFiles    = require('find-in-files'),
     files          = [],
-    start          = 0,
     filename       = "",
     path           = "",
     note           = "",
@@ -29,6 +28,8 @@ const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
+
+//conditional statements to set actions for the different commands
 
 if (program.createnote) {
     var note_content   = program.createnote;
@@ -54,9 +55,7 @@ if (program.searchnotes) {
     lookUp(query_string);
 };
 
-/*if (program.next) {
-    showNext();
-}*/
+//function to create the notes
 
 function createnotes() {
     function createFolder(dir) {
@@ -117,12 +116,24 @@ function deleteNote() {
 function list() {
     fs.readdir('notes', (err, files) => {
         if (err) throw err;
+        //conditional to check if a limit was provided in the command
         else if (program.limit) {
             var start = 0;
             console.log(start);
             var limit = program.limit;
             var stop = start + (limit - 1);
             console.log(stop);
+            for (i = start; i <= stop; i++) {
+                console.log(i + 1 + ". " + files[i])
+            }
+            var start = stop + 1;
+            var stop = start + (limit - 1);
+            //this is supposed to set functionality for the `next` command, I am not sure it works
+            if (program.next) {
+                for (i = start; i <= stop; i++) {
+                    console.log(i + 1 + ". " + files[i])
+                }
+            }
         }
         else {
             console.log('-------------------------------------');
@@ -131,18 +142,17 @@ function list() {
             var limit = files.length
             var stop = start + (limit - 1);
             console.log(stop);
+            for (i = start; i <= stop; i++) {
+                console.log(i + 1 + ". " + files[i])
+            }
         }
-        for (i = start; i <= stop; i++) {
-            console.log(i + 1 + ". " + files[i])
-        }
-    });  
+    });
 }
-/*var stop = start + (program.limit - 1);
-var start = stop + 1;*/
 
 function lookUp(query_string) {
     findInFiles.find(query_string, './notes')
     .then(function(results) {
+        var start = 0;
         var i = start;
         if (program.limit) {
             console.log(start);
@@ -155,15 +165,21 @@ function lookUp(query_string) {
                     i += 1;
                 }
             }
+            var start = stop + 1;
+            var stop = start + (limit - 1);
+            //this is supposed to set functionality for the `next` command, I am not sure it works
+            if (program.next) {
+                for (i = start; i <= stop; i++) {
+                    console.log(i + 1 + ". " + files[i])
+                }
+            }
         }
         else {
             console.log('----------------"' + query_string + '" is found in the following files----------------')
             for (entry in results) {
-                console.log(i + ". " + entry);
+                console.log(i + 1 + ". " + entry);
                 i += 1;
             }
         }
     });
 }
-/*var stop = start + (program.limit - 1);
-var start = stop + 1;*/
