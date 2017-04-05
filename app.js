@@ -6,6 +6,8 @@ var readline       = require('readline'),
     fs             = require('fs'),
     program        = require('commander'),
     findInFiles    = require('find-in-files'),
+    files          = [],
+    start          = 0,
     filename       = "",
     path           = "",
     note           = "",
@@ -14,11 +16,14 @@ var readline       = require('readline'),
 program
   .version('0.0.1')
   .option('-c, --createnote <note_content>', 'Create a note')
-  .option('-v, --viewnote', 'View a single note')
-  .option('-d, --deletenote', 'Delete a single note')
+  .option('-v, --viewnote <note_id>', 'View a single note')
+  .option('-d, --deletenote <note_id>', 'Delete a single note')
   .option('-l, --listnotes', 'View a formatted list of all the notes taken')
-  .option('-s, --searchnotes', 'View a formatted list of all the notes that can be identified by the query string')
+  .option('-s, --searchnotes <query_string>', 'View a formatted list of all the notes that can be identified by the query string')
+  .option('-e, --limit <limit>', 'Set the number of items to display in the resulting list')
+  .option('-n, --next', 'See the next set of data in the current running query')
   .parse(process.argv);
+
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -26,32 +31,43 @@ const rl = readline.createInterface({
 });
 
 if (program.createnote) {
+    var note_content   = program.createnote;
     createnotes();
 };
 
 if (program.viewnote) {
-    readNote(path);
+    var note_id = program.viewnote;
+    readNote();
 };
 
 if (program.deletenote) {
-    deleteNote(path);
+    var note_id = program.deletenote;
+    deleteNote();
 };
 
 if (program.listnotes) {
-    listNotes();
+    list();
 };
 
 if (program.searchnotes) {
-    searchNotes(queryString);
+    var query_string = program.searchnotes;
+    lookUp(query_string);
 };
+
+/*if (program.next) {
+    showNext();
+}*/
 
 function createnotes() {
     function createFolder(dir) {
         if (!fs.existsSync(dir)) {
+            console.log('Your folder is going to be created')
             fs.mkdirSync(dir);
         }
     }
 
+    createFolder(dir);
+    
     rl.question('Enter a name for your note here ==>  ', (filename) => {
         createFile(filename);
     })
@@ -70,64 +86,84 @@ function createnotes() {
                     throw err;
                 }
             }
-            writeNote(fd);
+            saveNote(fd, note_content);
         })
     }
 
-    //function to write the notes
-
-    function writeNote(fd) {
-        rl.question('Enter your note here ==>  ', (note_content) => {
-            saveNote(fd, note_content);
-        });
-    }
-    
     function saveNote(fd, note_content) {
         fs.writeFile(fd, note_content, (err) => {
             if (err) throw err;
             console.log('Your note is saved!');
-        }) 
+        }); 
     }
 }
  
-function readNote(path) {
-    rl.question('Enter the filename you want to read here ==>  ', (filename) => {
-        path = dir + '/' + filename;
-        fs.readFile(path, 'utf8', (err, data) => {
-            if (err) throw err;
-            console.log(data);
-        });    
+function readNote() {
+    path = dir + '/' + note_id;
+    fs.readFile(path, 'utf8', (err, data) => {
+        if (err) throw err;
+        console.log(data);
     });
 }
 
-function deleteNote(path) {
-    rl.question('Enter the filename you want to delete here ==>  ', (filename) => {
-        path = dir + '/' + filename;
-        fs.unlink(path, (err) => {
-            if (err) throw err;
-            console.log("Your note has been successfully deleted")
-        }); 
-        rl.close(); 
-    });
+function deleteNote() {
+    path = dir + '/' + note_id;
+    fs.unlink(path, (err) => {
+        if (err) throw err;
+        console.log("Your note has been successfully deleted")
+    }); 
 }
 
-function listNotes() {
+function list() {
     fs.readdir('notes', (err, files) => {
         if (err) throw err;
-        for (i = 0; i < files.length; i++) {
+        else if (program.limit) {
+            var start = 0;
+            console.log(start);
+            var limit = program.limit;
+            var stop = start + (limit - 1);
+            console.log(stop);
+        }
+        else {
+            console.log('-------------------------------------');
+            var start = 0;
+            console.log(start);
+            var limit = files.length
+            var stop = start + (limit - 1);
+            console.log(stop);
+        }
+        for (i = start; i <= stop; i++) {
             console.log(i + 1 + ". " + files[i])
         }
-    });   
+    });  
 }
+/*var stop = start + (program.limit - 1);
+var start = stop + 1;*/
 
-function searchNotes(queryString) {
-    findInFiles.find(queryString, './notes')
+function lookUp(query_string) {
+    findInFiles.find(query_string, './notes')
     .then(function(results) {
-        var i = 1;
-        console.log('----------------"' + queryString + '" is found in the following files----------------')
-        for (result in results) {
-            console.log(i + ". " + result);
-            i += 1;
+        var i = start;
+        if (program.limit) {
+            console.log(start);
+            var stop = start + (program.limit - 1);
+            console.log(stop);                
+            console.log('----------------"' + query_string + '" is found in the following files----------------')
+            for (entry in results) {
+                if (i <= stop) {
+                    console.log(i + 1 + ". " + entry);
+                    i += 1;
+                }
+            }
+        }
+        else {
+            console.log('----------------"' + query_string + '" is found in the following files----------------')
+            for (entry in results) {
+                console.log(i + ". " + entry);
+                i += 1;
+            }
         }
     });
 }
+/*var stop = start + (program.limit - 1);
+var start = stop + 1;*/
